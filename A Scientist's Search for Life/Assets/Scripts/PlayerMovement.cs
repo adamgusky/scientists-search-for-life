@@ -30,15 +30,16 @@ public class PlayerMovement : MonoBehaviour
     BoxCollider2D myFeetCollider;
 
 
-    const float groundCheckRadius = 0.2f;
+    const float groundCheckRadius = 1.5f;
     [SerializeField] private bool isGrounded;
     [SerializeField] private bool wasGrounded;
     float gravityScaleAtStart;
     bool isAlive = true;
     float horizontalValue;
     private bool multipleJumps;
-    [SerializeField] public int availableJumps;
-    [SerializeField] public int totalJumps = 0; //This should be changed when the level changes
+    private int availableJumps = 1;
+    public int totalJumps = 1;
+    private bool isFacingRight = true;
 
     void Start()
     {
@@ -68,6 +69,7 @@ public class PlayerMovement : MonoBehaviour
                 jumpBuffered = false;
             }
             
+
             if (Input.GetButtonDown("Jump") || (jumpBuffered && bufferTimer > 0))
             {
                 if (availableJumps > 0)
@@ -90,7 +92,7 @@ public class PlayerMovement : MonoBehaviour
                     bufferTimer = bufferTime;
                 }
             }
-            Die(); 
+            Die();
         }
 
     }
@@ -104,12 +106,10 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
-    void Jump()
+    private void Jump()
     {
-        // if we are on our first jump, we use jump power, otherwise, double jump power
-        float currentJumpPower = availableJumps == totalJumps ? jumpPower : dubJumpPower;
-        //On double jumps, decrement jump here
-        --availableJumps;
+        float currentJumpPower = jumpPower;
+        // --availableJumps;
         myRigidBody.velocity = Vector2.up * currentJumpPower;
         jumpSource.PlayOneShot(jumpSFX, 0.25f);
     }
@@ -129,10 +129,7 @@ public class PlayerMovement : MonoBehaviour
             }
         } else {
             myAnimator.SetBool("IsJumping", true);
-            myAnimator.SetBool("IsIdle", false);
-            if (wasGrounded)
-            {
-            }
+            // myAnimator.SetBool("IsIdle", false);
             wasGrounded = false;
         }   
     }
@@ -143,45 +140,38 @@ public class PlayerMovement : MonoBehaviour
         horizontalValue = Input.GetAxis("Horizontal");
         bool playerHasHorizontalSpeed = Mathf.Abs(myRigidBody.velocity.x) > Mathf.Epsilon;
 
-        myAnimator.SetBool("IsWalking", playerHasHorizontalSpeed && isGrounded);
+        // myAnimator.SetBool("IsWalking", playerHasHorizontalSpeed && isGrounded);
     }
 
     void FlipSprite() {
-        bool playerHasHorizontalSpeed = Mathf.Abs(myRigidBody.velocity.x) > Mathf.Epsilon;
-        if (playerHasHorizontalSpeed) {
-            transform.localScale = new Vector2(Mathf.Sign(myRigidBody.velocity.x), 1f);
+        if (myRigidBody.velocity.x < 0 && isFacingRight) {
+            transform.localScale = new Vector2(-transform.localScale.x, transform.localScale.y);
+            isFacingRight = false;
+        }
+        if (myRigidBody.velocity.x > 0 && !isFacingRight) {
+            transform.localScale = new Vector2(-transform.localScale.x, transform.localScale.y);
+            isFacingRight = true;
         }
     }
     
     void ClimbLadder() {
-        if (level < 2) {
-            return;
-        }
-        if (!myFeetCollider.IsTouchingLayers(LayerMask.GetMask("Climbing"))) {
-            myRigidBody.gravityScale = gravityScaleAtStart;
-            myAnimator.SetBool("IsClimbing", false);
-            return;
-        }
+        // if (!myFeetCollider.IsTouchingLayers(LayerMask.GetMask("Climbing"))) {
+        //     myRigidBody.gravityScale = gravityScaleAtStart;
+        //     myAnimator.SetBool("IsClimbing", false);
+        //     return;
+        // }
 
-        Vector2 climbVelocity = new Vector2(myRigidBody.velocity.x, Input.GetAxis("Vertical") * climbSpeed);
-        myRigidBody.velocity = climbVelocity;
-        myRigidBody.gravityScale = 0f;
+        // Vector2 climbVelocity = new Vector2(myRigidBody.velocity.x, Input.GetAxis("Vertical") * climbSpeed);
+        // myRigidBody.velocity = climbVelocity;
+        // myRigidBody.gravityScale = 0f;
     }
 
     void Die() {
-        if (myBodyCollider.IsTouchingLayers(LayerMask.GetMask("Skeleton", "Hazards"))) {
-            isAlive = false;
-            myAnimator.SetBool("IsWalking", false);
-            myRigidBody.velocity = deathKick;
+        // if (myBodyCollider.IsTouchingLayers(LayerMask.GetMask("Skeleton", "Hazards"))) {
+            // isAlive = false;
+            // myAnimator.SetBool("IsWalking", false);
+            // myRigidBody.velocity = deathKick;
             // FindObjectOfType<GameSession>().ProcessPlayerDeath();
-        }
+        // }
     }
-
-    public void UpdateLevel(int l) {
-        level = l;
-        if (l > 0) {
-            totalJumps = 1;
-            availableJumps = 1;
-        }
-    } 
 }
